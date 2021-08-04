@@ -7,33 +7,33 @@ from requests.exceptions import ConnectionError, Timeout
 load_dotenv()
 
 
-class SqliteCredentialQuery:
+class SqliteCredentialQueries:
 
-    from datetime import datetime
-    from sqlite3 import connect
+    from typing import Optional
 
-    c = connect(f'{os.getenv("OPS_DB_PATH")}')
-    cur = c.cursor()
-    t = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    def __init__(self):
+        from datetime import datetime
+        from sqlite3 import connect
 
-    def check_len(self) -> bool:
-        r = self.cur.execute('SELECT * from credential').fetchall()
-        if len(r) > 0:
+        self.con = connect(f'{os.getenv("OPS_DB_PATH")}')
+        self.cursor = self.con.cursor()
+        self.timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    def check_table_length(self) -> Optional[bool]:
+        if self.cursor.execute('SELECT * from credential').fetchall():
             return True
 
-    def update(self, token: str, status: str) -> None:
-        self.cur.execute(
+    def update(self, token: str, stat: str) -> None:
+        self.cursor.execute(
             f'UPDATE credential SET a_token="{token}", '
-            f'updated="{self.t}", status="{status}" WHERE id=1')
-        self.c.commit()
-        self.c.close()
+            f'updated="{self.timestamp}", status="{stat}" WHERE id=1')
+        self.con.commit()
 
-    def insert(self, token: str, status: str) -> None:
-        self.cur.execute(
+    def insert(self, token: str, stat: str) -> None:
+        self.cursor.execute(
             'INSERT INTO credential (a_token, updated, status) VALUES '
-            f'("{token}", "{self.t}", "{status}")')
-        self.c.commit()
-        self.c.close()
+            f'("{token}", "{self.timestamp}", "{stat}")')
+        self.con.commit()
 
 
 class OPSLogin:
@@ -42,7 +42,7 @@ class OPSLogin:
     from typing import Union, Tuple
 
     def __init__(self):
-        self.cursor = SqliteCredentialQuery()
+        self.cursor = SqliteCredentialQueries()
 
     def auth(self) -> None:
         # try 3 times to authenticate
@@ -57,9 +57,9 @@ class OPSLogin:
                     break
                 self._store(
                     'Null', 'Request Error, check auth endpoint response.')
-        self.cursor.c.close()
+        self.cursor.con.close()
 
-    def _req(self) -> Union[bool, str]:
+    def _req(self):
         u, h = self._set_params()
         r = requests.request(
             "POST", u, headers=h, data='grant_type=client_credentials',
@@ -69,17 +69,17 @@ class OPSLogin:
     @staticmethod
     def _set_params() -> Tuple[str, dict]:
         from base64 import b64encode
-        b_ops_auth = bytes(
+        credential = bytes(
             ':'.join((os.getenv("OPS_AUTH_CONSUMER_KEY"), os.getenv(
                 "OPS_AUTH_SECRET_KEY"))), encoding='utf-8')
         h = {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': f'Basic {b64encode(b_ops_auth).decode()}'
+            'Authorization': f'Basic {b64encode(credential).decode()}'
         }
         return os.getenv('OPS_AUTH_ENDPOINT'), h
 
     @staticmethod
-    def _token(response: requests.models.Response):
+    def _token(response: requests.models.Response) -> Union[bool, str]:
         from contextlib import suppress
         from json import JSONDecodeError
         with suppress(JSONDecodeError):
@@ -94,7 +94,7 @@ class OPSLogin:
 
     def _store(self, token: str, status: str) -> None:
         # condition if it is the first run of this bot.
-        if self.cursor.check_len():
+        if self.cursor.check_table_length():
             self.cursor.update(token, status)
         else:
             self.cursor.insert(token, status)
