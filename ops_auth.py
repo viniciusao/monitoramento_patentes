@@ -7,42 +7,15 @@ from requests.exceptions import ConnectionError, Timeout
 load_dotenv()
 
 
-class SqliteCredentialQueries:
-
-    from typing import Optional
-
-    def __init__(self):
-        from datetime import datetime
-        from sqlite3 import connect
-
-        self.con = connect(f'{os.getenv("OPS_DB_PATH")}')
-        self.cursor = self.con.cursor()
-        self.timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    def check_table_length(self) -> Optional[bool]:
-        if self.cursor.execute('SELECT * from credential').fetchall():
-            return True
-
-    def update(self, token: str, stat: str) -> None:
-        self.cursor.execute(
-            f'UPDATE credential SET a_token="{token}", '
-            f'updated="{self.timestamp}", status="{stat}" WHERE id=1')
-        self.con.commit()
-
-    def insert(self, token: str, stat: str) -> None:
-        self.cursor.execute(
-            'INSERT INTO credential (a_token, updated, status) VALUES '
-            f'("{token}", "{self.timestamp}", "{stat}")')
-        self.con.commit()
-
-
 class OPSLogin:
     """ Stores token in `ops.db` from OAuth2 at OPS API. """
 
     from typing import Union, Tuple
 
     def __init__(self):
-        self.cursor = SqliteCredentialQueries()
+        from utils.queries_sqlite import Queries
+
+        self.cursor = Queries()
 
     def auth(self) -> None:
         # try 3 times to authenticate
