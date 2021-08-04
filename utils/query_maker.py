@@ -31,10 +31,9 @@ def get_ipc_codes(*dates: str) -> List[dict]:
 
 def _create_query(ipcs: list, *dates: str):
     sd, ed = dates
-    q = [{'ipc': None, 'query': 'ic ='}] * len(ipcs)
-    for c, ipc in enumerate(ipcs):
-        q[c]['ipc'] = ipc
-        q[c]['query'] += f'"{ipc}" AND pd within "{sd} {ed}"'
+    q = []
+    for ipc in ipcs:
+        q.append({'ipc': ipc, 'query': f'ic="{ipc}" AND pd within "{sd} {ed}"'})
     return q
 
 
@@ -47,7 +46,7 @@ def create_query_over_2000(ipc: str, *dates: int) -> List[str]:
     sd, ed = '01', '04'
     for ano in anos:
         for _ in range(3):
-            q.append(f'ic ="{ipc}" AND pd within "{ano}{sd} {ano}{ed}')
+            q.append(f'ic="{ipc}" AND pd within "{ano}{sd} {ano}{ed}"')
             if int(sd) < 6:
                 sd = '0' + str(int(sd) + 4)
             ed = '0' + str(int(ed) + 4) if int(ed) < 6 else str(int(ed) + 4)

@@ -1,7 +1,7 @@
 import os
 from time import sleep
 import sqlite3
-from typing import List, Union, Tuple
+from typing import List, Optional, Union, Tuple
 from dotenv import load_dotenv
 import requests
 from utils.query_maker import create_query_over_2000, get_ipc_codes
@@ -47,10 +47,11 @@ class QueryOPS:
         if p > 2000:
             for q in self._set_range_over_2000(ipc):
                 self._search(q)
-        r = self._range_maker(p)
-        sleep(self.sleep)
-        if r:
-            self._search_patents(r.get('vezes'), r.get('l_range'), query)
+        else:
+            r = self._range_maker(p)
+            sleep(self.sleep)
+            if r:
+                self._search_patents(r.get('vezes'), r.get('l_range'), query)
 
     def _orch(self, node_service: str, any_: str, query: str) -> 'ParseXML':
         """ Orchestrator to create a url+query and request it. """
@@ -72,7 +73,11 @@ class QueryOPS:
         self.logger.info(url)
         h = {'Authorization': f'Bearer {self._get_a_token()}'}
         r = requests.get(url, headers=h)
-        self._set_sleep(node_service, r.headers.get('X-Throttling-Control'))
+        if self._set_sleep(node_service, r.headers.get('X-Throttling-Control')):
+            print(r.text)
+            print(r.headers)
+            sleep(60)
+            self._req(node_service, url)
         if not binary:
             return r.text
         return r.content
@@ -80,12 +85,16 @@ class QueryOPS:
     def _get_a_token(self) -> str:
         return self.cur.execute('SELECT a_token from credential').fetchone()[0]
 
-    def _set_sleep(self, node_service: str, response_headers: str) -> None:
+    def _set_sleep(self, node_service: str, response_headers: str) -> Optional[str]:
         from re import sub
-        get_node = response_headers[response_headers.find(node_service):]
-        node_reqmax_perminute = get_node[get_node.find(':') + 1:]
-        filter_ = int(sub(r'\D', " ", node_reqmax_perminute).split()[0])
-        self.sleep = 60 / filter_ + 1
+        try:
+            get_node = response_headers[response_headers.find(node_service):]
+            node_reqmax_perminute = get_node[get_node.find(':') + 1:]
+            filter_ = int(sub(r'\D', " ", node_reqmax_perminute).split()[0])
+            self.sleep = 60 / filter_ + 1
+        except AttributeError:
+            self.sleep = 13
+            return 'error'
 
     def _set_range_over_2000(self, ipc: str):
         return create_query_over_2000(ipc, int(self.start_date), int(self.end_date))
@@ -131,6 +140,7 @@ class QueryOPS:
         sql_query = 'INSERT INTO total_patents (country, pub_num, kind, created) VALUES '
         for patent in patents:
             sql_query += self._sql_query_maker(patent)
+        self.logger.info(sql_query)
         self.cur.execute(sql_query.rstrip(','))
         self.con.commit()
 
