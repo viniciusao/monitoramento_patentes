@@ -1,7 +1,12 @@
-import os
+from base64 import b64encode
+from contextlib import suppress
+from json import JSONDecodeError
+from os import getenv
+from typing import Union, Tuple
 from dotenv import load_dotenv
 import requests
 from requests.exceptions import ConnectionError, Timeout
+from utils.queries_sqlite import Queries
 
 
 load_dotenv()
@@ -10,11 +15,7 @@ load_dotenv()
 class OPSLogin:
     """ Stores token in `ops.db` from OAuth2 at OPS API. """
 
-    from typing import Union, Tuple
-
     def __init__(self):
-        from utils.queries_sqlite import Queries
-
         self.cursor = Queries()
 
     def auth(self) -> None:
@@ -41,20 +42,17 @@ class OPSLogin:
 
     @staticmethod
     def _set_params() -> Tuple[str, dict]:
-        from base64 import b64encode
         credential = bytes(
-            ':'.join((os.getenv("OPS_AUTH_CONSUMER_KEY"), os.getenv(
+            ':'.join((getenv("OPS_AUTH_CONSUMER_KEY"), getenv(
                 "OPS_AUTH_SECRET_KEY"))), encoding='utf-8')
         h = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': f'Basic {b64encode(credential).decode()}'
         }
-        return os.getenv('OPS_AUTH_ENDPOINT'), h
+        return getenv('OPS_AUTH_ENDPOINT'), h
 
     @staticmethod
     def _token(response: requests.models.Response) -> Union[bool, str]:
-        from contextlib import suppress
-        from json import JSONDecodeError
         with suppress(JSONDecodeError):
             return response.json().get('access_token')
 
