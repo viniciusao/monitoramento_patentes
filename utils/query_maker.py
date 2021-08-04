@@ -17,24 +17,20 @@
 
 """
 
-import os
+from os import getenv
 from typing import List
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
-def get_ipc_codes(*dates: str) -> List[dict]:
-    codes = [i for i in eval(os.getenv('IPC_CODES'))]
+def get_ipc_codes(*dates: str):
+    codes = [i for i in eval(getenv('IPC_CODES'))]
     return _create_query(codes, *dates)
 
 
-def _create_query(ipcs: list, *dates: str):
+def _create_query(ipcs: list, *dates: str) -> List[dict]:
     sd, ed = dates
-    q = []
-    for ipc in ipcs:
-        q.append({'ipc': ipc, 'query': f'ic="{ipc}" AND pd within "{sd} {ed}"'})
-    return q
+    return [
+        {'ipc': ipc, 'query': f'ic="{ipc}" AND pd within "{sd} {ed}"'}
+        for ipc in ipcs]
 
 
 def create_query_over_2000(ipc: str, *dates: int) -> List[str]:
