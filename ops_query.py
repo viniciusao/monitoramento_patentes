@@ -1,7 +1,7 @@
 import os
 from time import sleep
 import sqlite3
-from typing import Union, Tuple
+from typing import List, Union, Tuple
 from dotenv import load_dotenv
 import requests
 from utils.query_maker import create_query_over_2000, get_ipc_codes
@@ -117,7 +117,7 @@ class QueryOPS:
             sleep(self.sleep)
 
     @staticmethod
-    def _iter_search_patents(c_r: list[int, int]) -> Tuple[list[int, int], str]:
+    def _iter_search_patents(c_r: List[int]) -> Tuple[List[int], str]:
         r_fmt = '-'.join((str(c_r[0]), str(c_r[1])))
         c_r[0] += 100
         c_r[1] += 100
