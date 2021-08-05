@@ -1,15 +1,15 @@
 from datetime import datetime
 import logging
-from os import getenv
 from time import sleep
 from typing import List, Optional, Tuple
 from dotenv import load_dotenv
-from utils.http_request import req
+from utils.http_request import orchestrator
 from utils.queries_sqlite import Queries
 from utils.query_maker import create_query_over_2000, get_ipc_codes
-from utils.xml_parser import ParseXML
 
 load_dotenv()
+
+# TODO: melhorar o logging, deixar uniformizado
 logging.basicConfig(
             format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)s] %(message)s',
             datefmt='%Y-%m-%d:%H:%M:%S',
@@ -41,22 +41,17 @@ class OPSExtractStorePatents:
     def _search(self, query: str, ipc=None) -> None:
         """ OPS API search endpoint """
 
-        p = self._orch('search', query, '?').extract_qntd_pages()
-        if p > 2000:
+        self.sleep, xml_parser = orchestrator('search', '?', query)
+        if xml_parser.extract_qntd_pages() > 2000:
             for q in self._set_range_over_2000(ipc):
+                sleep(self.sleep)
                 self._search(q)
         else:
-            r = self._range_maker(p)
+            r = self._range_maker(xml_parser.extract_qntd_pages())
+            sleep(self.sleep)
             if r:
                 self._search_patents(r.get('vezes'), r.get('l_range'), query)
-            sleep(self.sleep)
-
-    def _orch(self, node_service: str, query: str, wildcard: str) -> 'ParseXML':
-        """ Orchestrator to create a url+query and request it. """
-
-        url = getenv('OPS_SEARCH_ENDPOINT').format(wildcard) + query
-        xml, self.sleep = req(node_service, url)
-        return ParseXML(xml)
+                sleep(self.sleep)
 
     def _set_range_over_2000(self, ipc: str):
         return create_query_over_2000(ipc, int(self.start_date), int(self.end_date))
@@ -95,16 +90,21 @@ class OPSExtractStorePatents:
         return c_r, r_fmt
 
     def _get_patents_pubnum(self, range_: str, query: str) -> None:
-        r = self._orch('search', query, f'?Range={range_}&')
-        self._store_patents(r.extract_pubnums())
+        self.sleep, xml_parser = orchestrator('search', f'?Range={range_}&', query)
+        self._store_patents(xml_parser.extract_pubnums())
 
     def _store_patents(self, patents: list) -> None:
-        sql_query = 'INSERT INTO total_patents (country, pub_num, kind, created) VALUES '
+        from sqlite3 import OperationalError
+        sql_query = 'INSERT INTO patents (country, pub_num, kind, created) VALUES '
         for patent in patents:
             sql_query += self._sql_query_maker(patent)
-        self.logger.info(sql_query)
-        self.db.cursor.execute(sql_query.rstrip(','))
-        self.db.con.commit()
+        try:
+            self.logger.info(sql_query)
+            self.db.cursor.execute(sql_query.rstrip(','))
+            self.db.con.commit()
+        except OperationalError:
+            self.logger.error('ERRO')
+            self.logger.error(sql_query)
 
     @staticmethod
     def _sql_query_maker(patent: dict) -> str:

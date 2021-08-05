@@ -1,5 +1,5 @@
-import xml.etree.ElementTree as ElT
 from typing import List, Union, Tuple
+import xml.etree.ElementTree as ElT
 
 
 class ParseXML:
@@ -9,8 +9,7 @@ class ParseXML:
 
     def extract_qntd_pages(self) -> int:
         parser = ElT.fromstring(self.xml).find('.//{*}biblio-search')
-        p = parser.attrib.get('total-result-count')
-        return int(p)
+        return int(parser.attrib.get('total-result-count'))
 
     def extract_pubnums(self) -> List[dict]:
         pubsnums = []
@@ -37,7 +36,7 @@ class ParseXML:
         t = ['Lang={} '.format(i.attrib.get('lang')) + i.text for i in titles]
         return ' | '.join(t)
 
-    def extract_patent_family(self):
+    def extract_patent_family(self) -> Union[bool, List[str]]:
         if error := isinstance(self._no_patent_family(), str):
             return error
         p = ElT.fromstring(self.xml)

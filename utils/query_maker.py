@@ -1,29 +1,10 @@
-"""
-    Creates a `query` based on a list of IPC codes to search.
-
-    ...
-
-    Methods
-    -------
-    get_ipc_codes():
-        :returns a list of queries.
-    _slice_ipc_list(chunks_of: int, code: str, index: int):
-        :returns either a list or tuple of chunks of a entire list of
-        IPC codes.
-    _create_query(ipc_codes: list):
-        creates a query list.
-    _iter_query(codes: list, counter: int, queries: list):
-        loops through a query list and adds operators to it.
-
-"""
-
 from os import getenv
 from typing import List
 
 
-def get_ipc_codes(*dates: str):
+def get_ipc_codes(*args: str):
     codes = [i for i in eval(getenv('IPC_CODES'))]
-    return _create_query(codes, *dates)
+    return _create_query(codes, *args)
 
 
 def _create_query(ipcs: list, *dates: str) -> List[dict]:
@@ -33,7 +14,13 @@ def _create_query(ipcs: list, *dates: str) -> List[dict]:
         for ipc in ipcs]
 
 
+# TODO: improve.
 def create_query_over_2000(ipc: str, *dates: int) -> List[str]:
+    """
+    when a query search returns more than 2000 pages,
+    this method :returns subqueries with different ranges.
+    """
+
     # pretty lame function, it is a dummy one just for the current purpose
     # it shall be replaced.
     sd, ed = dates
