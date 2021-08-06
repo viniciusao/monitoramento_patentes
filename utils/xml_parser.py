@@ -1,65 +1,69 @@
-from typing import List, Union, Tuple
 import xml.etree.ElementTree as ElT
 
 
 class ParseXML:
+    from typing import List, Optional, Union, Tuple
 
     def __init__(self, xml):
         self.xml = xml
 
-    def extract_qntd_pages(self) -> int:
+    def extract_search_pages_quantity(self) -> Optional[int]:
         parser = ElT.fromstring(self.xml).find('.//{*}biblio-search')
-        return int(parser.attrib.get('total-result-count'))
+        total_pages = parser.attrib.get('total-result-count')
+        if parser and total_pages:
+            return int(total_pages)
 
-    def extract_pubnums(self) -> List[dict]:
-        pubsnums = []
-        for i in ElT.fromstring(self.xml).findall('.//{*}document-id'):
-            pubnum = {}
-            for i2 in i:
-                key = i2.tag[i2.tag.find('}') + 1:]
-                value = i2.text
-                pubnum.update({key: value})
-            pubsnums.append(pubnum)
-        return pubsnums
+    def extract_patents(self) -> Optional[List[dict]]:
+        if patents := ElT.fromstring(self.xml).findall('.//{*}document-id'):
+            ps = []
+            for patent in patents:
+                p = {}
+                for fields in patent:
+                    key = fields.tag[fields.tag.find('}') + 1:]
+                    value = fields.text
+                    p.update({key: value})
+                ps.append(p)
+            return ps
 
-    def extract_abstract(self) -> Tuple[str, str]:
+    def extract_abstract(self) -> Tuple[str, str, Union[List[str], str]]:
         parser = ElT.fromstring(self.xml)
         try:
-            a = parser.find('.//{*}abstract').find('./{*}p').text
+            ab = parser.find('.//{*}abstract').find('./{*}p').text
         except AttributeError:
-            a = 'null'
-        t = self._extract_titles()
-        return t, a
+            ab = 'null'
+        return self._extract_titles(), ab, self._extract_applicants()
 
     def _extract_titles(self) -> str:
-        titles = ElT.fromstring(self.xml).findall('.//{*}invention-title')
-        t = ['Lang={} '.format(i.attrib.get('lang')) + i.text for i in titles]
-        return ' | '.join(t)
+        if titles := ElT.fromstring(self.xml).findall('.//{*}invention-title'):
+            t = ['Lang={} '.format(i.attrib.get('lang')) + i.text for i in titles]
+            return ' | '.join(t)
+        return 'null'
+
+    def _extract_applicants(self) -> Union[List[str], str]:
+        if applicants := ElT.fromstring(self.xml).findall('.//{*}applicant-name'):
+            return [i.find('.//{*}name').text for i in applicants]
+        return 'null'
 
     def extract_patent_family(self) -> Union[bool, List[str]]:
-        if error := isinstance(self._no_patent_family(), str):
-            return error
-        p = ElT.fromstring(self.xml)
-        patent_family = []
-        for i in p.findall('.//{*}family-member//{*}publication-reference'):
-            infos = [info.text for info in i.find('.//{*}document-id')]
-            patent_family.append(''.join(infos[:-1]))
-            # appends without date of publication
-        return patent_family
-
-    def _no_patent_family(self) -> Union[str, bool]:
-        msg = 'No results found'
-        try:
-            r = ElT.fromstring(self.xml).find('.//{*}message').text
-        except AttributeError:
+        if self._no_patent_family():
             return False
-        else:
-            if r == msg:
-                return msg
-            return 'Unkown error'
+        pf = []
+        for i in ElT.fromstring(self.xml).findall('.//{*}family-member//{*}publication-reference'):
+            infos = [info.text for info in i.find('.//{*}document-id')]
+            pf.append(''.join(infos[:-1]))
+            # appends without date of publication
+        return pf
 
-    def checks_for_imgs(self) -> Union[Tuple[int, str], str]:
+    def _no_patent_family(self) -> bool:
+        if msg := ElT.fromstring(self.xml).find('.//{*}message'):
+            if msg.text == 'No results found':
+                return True
+            # TODO: e se não houver?
+        return False
+
+    def checks_for_imgs(self) -> Optional[Tuple[int, str]]:
         parser = ElT.fromstring(self.xml)
         if p := parser.find('.//{*}document-instance[@desc="Drawing"]'):
             u = p.attrib.get('link')
             return int(p.attrib.get('number-of-pages')), u
+        # TODO: e os outros tipos de imagens?
