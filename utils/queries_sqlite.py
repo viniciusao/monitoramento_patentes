@@ -25,7 +25,8 @@ class Queries:
         return self.cursor.execute('SELECT a_token from credential').fetchone()[0]
 
     def get_patents(self) -> List[str]:
-        return self.cursor.execute('SELECT * FROM patents').fetchall()
+        return self.cursor.execute(
+            'SELECT id, country, pub_num, kind FROM patents').fetchall()
 
     def insert(self, a_token: str, status: str) -> None:
         self.cursor.execute(
