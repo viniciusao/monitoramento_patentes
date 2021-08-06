@@ -15,11 +15,10 @@ logging.basicConfig(
 logger = logging.getLogger('')
 
 
-def orchestrator(*args) -> Tuple[float, 'ParseXML']:
+def orchestrator(service: str, *args: str) -> Tuple[float, 'ParseXML']:
     """ Orchestrator to create a url+query and request it. """
 
-    s, _, _ = args
-    xml, sleep_ = request_(s, _get_service_endpoint(*args))
+    xml, sleep_ = request_(service, _get_service_endpoint(service, *args))
     return sleep_, ParseXML(xml)
 
 
@@ -28,9 +27,9 @@ def _get_service_endpoint(service: str, wildcard: str, query=None) -> str:
     if service == 'search':
         return getenv('OPS_SEARCH_ENDPOINT').format(wildcard) + query
     elif service == 'inpadoc':
-        return getenv('OPS_PATENTFAMILY_ENDPOINT').format(wildcard) + query
-    elif service == 'images':
-        return getenv('OPS_CHECKIMAGES_ENDPOINT').format(wildcard) + query
+        return getenv('OPS_PATENTFAMILY_ENDPOINT').format(wildcard)
+    elif service == 'retrieval':
+        return getenv('OPS_CHECKIMAGES_ENDPOINT').format(wildcard)
 
 
 def request_(service: str, url: str, binary=False) -> Tuple[Union[str, bytes], float]:
