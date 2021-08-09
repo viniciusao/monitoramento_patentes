@@ -25,24 +25,39 @@ class ParseXML:
                 ps.append(p)
             return ps
 
-    def extract_abstract(self) -> Tuple[str, str, Union[List[str], str]]:
+    def extract_abstract(self) -> Tuple[str, str, Union[List[str]]]:
         parser = ElT.fromstring(self.xml)
         try:
-            ab = parser.find('.//{*}abstract').find('./{*}p').text
+            ab = parser.find('.//{*}abstract').find('./{*}p').text.replace("'", '')
         except AttributeError:
             ab = 'null'
         return self._extract_titles(), ab, self._extract_applicants()
 
     def _extract_titles(self) -> str:
         if titles := ElT.fromstring(self.xml).findall('.//{*}invention-title'):
-            t = ['Lang={} '.format(i.attrib.get('lang')) + i.text for i in titles]
-            return ' | '.join(t)
+            t = [
+                'Lang={} '.format(i.attrib.get('lang')) + i.text.replace("'", '')
+                for i in titles]
+            for title in t:
+                if 'Lang=en' in title:
+                    return title.split(' ', maxsplit=1).pop().replace("'", '')
+            return t.pop().split(' ', maxsplit=1).pop().replace("'", '')
+        print(self.xml)
         return 'null'
 
-    def _extract_applicants(self) -> Union[List[str], str]:
-        if applicants := ElT.fromstring(self.xml).findall('.//{*}applicant-name'):
-            return [i.find('.//{*}name').text for i in applicants]
-        return 'null'
+    def _extract_applicants(self) -> Union[str, List[str]]:
+        if not ElT.fromstring(self.xml).findall('.//{*}applicant-name'):
+            return 'null'
+        applicants = ElT.fromstring(self.xml).findall('.//{*}applicant[@sequence="1"]')
+        a = [
+            i.find('.//{*}name').text.replace("'", '').lower()
+            for i in applicants]
+        for applicant in a:
+            if '[' not in applicant and len(a) > 1:
+                a.remove(applicant)
+        if len(a) < 2:
+            return a.pop()
+        return a
 
     def extract_patent_family(self) -> Union[bool, List[str]]:
         if self._no_patent_family():

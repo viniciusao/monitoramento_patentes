@@ -38,24 +38,26 @@ def request_(service: str, url: str, binary=False) -> Tuple[Union[str, bytes], f
     r = requests.get(url, headers=h)
     throttling = r.headers.get('X-Throttling-Control')
     if not throttling:
-        _print_response(r, service, url, binary)
-    else:
-        if not binary:
-            return r.text, _set_sleep(service, throttling)
-        return r.content, _set_sleep(service, throttling)
+        _print_response(r)
+        return request_(service, url, binary)
+    if not binary:
+        return r.text, _set_sleep(service, throttling)
+    return r.content, _set_sleep(service, throttling)
 
 
 # TODO: após testes, melhorar a função para lidar com os erros.
-def _print_response(response: requests.models.Response, *args: Union[str, bool]) -> None:
+def _print_response(response: requests.models.Response) -> None:
     logger.error(response.text)
     logger.error(response.headers)
     logger.error(response.status_code)
     sleep(180)
-    request_(*args)
 
 
 def _set_sleep(service: str, throttling: str) -> float:
     service = throttling[throttling.find(service):]
     max_requests_per_minute = service[service.find(':') + 1:]
     filter_ = int(sub(r'\D', " ", max_requests_per_minute).split()[0])
-    return 60 / filter_ + 1
+    try:
+        return 60 / filter_ + 1
+    except ZeroDivisionError:
+        return 61

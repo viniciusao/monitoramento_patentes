@@ -26,7 +26,8 @@ class Queries:
 
     def get_patents(self) -> List[str]:
         return self.cursor.execute(
-            'SELECT id, country, pub_num, kind FROM patents').fetchall()
+            'SELECT id, country, pub_num, kind FROM patents WHERE '
+            'id > 20154').fetchall()
 
     def insert(self, a_token: str, status: str) -> None:
         self.cursor.execute(
