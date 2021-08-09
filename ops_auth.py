@@ -24,7 +24,7 @@ class OPSLogin:
             try:
                 r = self._req()
             except (ConnectionError, Timeout) as e:
-                self._erros(e)
+                self._errors(e)
             else:
                 if r:
                     self._store(r, 'Ok')
@@ -56,7 +56,7 @@ class OPSLogin:
         with suppress(JSONDecodeError):
             return response.json().get('access_token')
 
-    def _erros(self, e: Union[ConnectionError, Timeout]) -> None:
+    def _errors(self, e: Union[ConnectionError, Timeout]) -> None:
         if isinstance(e, ConnectionError):
             self._store('Null', 'Failed to connect.')
         elif isinstance(e, Timeout):

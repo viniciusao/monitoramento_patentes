@@ -42,16 +42,18 @@ class OPSExtractStorePatents:
         """ OPS API search endpoint """
 
         self.sleep, xml_parser = orchestrator('search', '?', query)
-        if xml_parser.extract_qntd_pages() > 2000:
-            for q in self._set_range_over_2000(ipc):
+        pages = xml_parser.extract_search_pages_quantity()
+        if pages and pages > 0:
+            if pages > 2000:
+                for q in self._set_range_over_2000(ipc):
+                    sleep(self.sleep)
+                    self._search(q)
+            else:
+                r = self._range_maker(pages)
                 sleep(self.sleep)
-                self._search(q)
-        else:
-            r = self._range_maker(xml_parser.extract_qntd_pages())
-            sleep(self.sleep)
-            if r:
-                self._search_patents(r.get('vezes'), r.get('l_range'), query)
-                sleep(self.sleep)
+                if r:
+                    self._search_patents(r.get('vezes'), r.get('l_range'), query)
+                    sleep(self.sleep)
 
     def _set_range_over_2000(self, ipc: str):
         return create_query_over_2000(ipc, int(self.start_date), int(self.end_date))
@@ -91,7 +93,8 @@ class OPSExtractStorePatents:
 
     def _get_patents_pubnum(self, range_: str, query: str) -> None:
         self.sleep, xml_parser = orchestrator('search', f'?Range={range_}&', query)
-        self._store_patents(xml_parser.extract_pubnums())
+        if ps := xml_parser.extract_patents():
+            self._store_patents(ps)
 
     def _store_patents(self, patents: list) -> None:
         from sqlite3 import OperationalError
