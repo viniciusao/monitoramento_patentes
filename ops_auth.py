@@ -1,5 +1,4 @@
 from base64 import b64encode
-from contextlib import suppress
 from json import JSONDecodeError
 from os import getenv
 from typing import Optional, Union, Tuple
@@ -25,7 +24,6 @@ class OPSLogin:
             if r:
                 self._store('Ok', r)
                 break
-            self._store('Request Error, check auth endpoint response.')
         self.cursor.con.close()
 
     def _req(self):
@@ -63,10 +61,11 @@ class OPSLogin:
         else:
             self.cursor.insert_access_token(status, access_token)
 
-    @staticmethod
-    def _token(response: requests.models.Response) -> Optional[str]:
-        with suppress(JSONDecodeError):
+    def _token(self, response: requests.models.Response) -> Optional[str]:
+        try:
             return response.json().get('access_token')
+        except JSONDecodeError:
+            self._store('Weird response, check the OPS Auth endpoint.')
 
 
 if __name__ == '__main__':
