@@ -55,7 +55,7 @@ class OPSLogin:
         else:
             self._store('Unknown error.')
 
-    def _store(self, status: str, access_token=None) -> None:
+    def _store(self, status: str, access_token: str = None) -> None:
         if self.cursor.check_credential_existence():
             self.cursor.update_access_token(status, access_token)
         else:
