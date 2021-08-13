@@ -2,7 +2,7 @@ from base64 import b64encode
 from contextlib import suppress
 from json import JSONDecodeError
 from os import getenv
-from typing import Union, Tuple
+from typing import Optional, Union, Tuple
 from dotenv import load_dotenv
 import requests
 from requests.exceptions import ConnectionError, Timeout
@@ -21,24 +21,23 @@ class OPSLogin:
     def auth(self) -> None:
         # try 3 times to authenticate
         for _ in range(3):
-            try:
-                r = self._req()
-            except (ConnectionError, Timeout) as e:
-                self._errors(e)
-            else:
-                if r:
-                    self._store(r, 'Ok')
-                    break
-                self._store(
-                    'Null', 'Request Error, check auth endpoint response.')
+            r = self._req()
+            if r:
+                self._store('Ok', r)
+                break
+            self._store('Request Error, check auth endpoint response.')
         self.cursor.con.close()
 
     def _req(self):
         u, h = self._set_params()
-        r = requests.request(
-            "POST", u, headers=h, data='grant_type=client_credentials',
-            timeout=15)
-        return self._token(r)
+        try:
+            r = requests.request(
+                "POST", u, headers=h,
+                data='grant_type=client_credentials', timeout=15)
+        except (ConnectionError, Timeout) as e:
+            self._errors(e)
+        else:
+            return self._token(r)
 
     @staticmethod
     def _set_params() -> Tuple[str, dict]:
@@ -47,28 +46,27 @@ class OPSLogin:
                 "OPS_AUTH_SECRET_KEY"))), encoding='utf-8')
         h = {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': f'Basic {b64encode(credential).decode()}'
-        }
+            'Authorization': f'Basic {b64encode(credential).decode()}'}
         return getenv('OPS_AUTH_ENDPOINT'), h
-
-    @staticmethod
-    def _token(response: requests.models.Response) -> Union[bool, str]:
-        with suppress(JSONDecodeError):
-            return response.json().get('access_token')
 
     def _errors(self, e: Union[ConnectionError, Timeout]) -> None:
         if isinstance(e, ConnectionError):
-            self._store('Null', 'Failed to connect.')
+            self._store('Failed to connect.')
         elif isinstance(e, Timeout):
-            self._store('Null', 'Connection Timedout.')
-        self._store('Null', 'Unknown error.')
-
-    def _store(self, token: str, status: str) -> None:
-        # condition if it is the first run of this bot.
-        if self.cursor.check_table_length():
-            self.cursor.update(token, status)
+            self._store('Connection Timedout.')
         else:
-            self.cursor.insert(token, status)
+            self._store('Unknown error.')
+
+    def _store(self, status: str, access_token=None) -> None:
+        if self.cursor.check_credential_existence():
+            self.cursor.update_access_token(status, access_token)
+        else:
+            self.cursor.insert_access_token(status, access_token)
+
+    @staticmethod
+    def _token(response: requests.models.Response) -> Optional[str]:
+        with suppress(JSONDecodeError):
+            return response.json().get('access_token')
 
 
 if __name__ == '__main__':
