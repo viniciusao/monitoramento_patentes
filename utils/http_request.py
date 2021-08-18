@@ -1,63 +1,58 @@
-import logging
-from os import getenv
 from time import sleep
-from typing import Union, Tuple
 from re import sub
-import requests
-from utils.queries_sqlite import Queries
-from utils.xml_parser import ParseXML
-
-# TODO: melhorar o logging, deixar uniformizado
-logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)s] %(message)s',
-    datefmt='%Y-%m-%d:%H:%M:%S',
-    level=logging.INFO)
-logger = logging.getLogger('')
+from requests import get, models
+from . import environ, Logger, cast, Optional, Union, Tuple
+from .queries_sqlite import Queries
+from .xml_parser import ParseXML
 
 
-def orchestrator(service: str, *args: str) -> Tuple[float, 'ParseXML']:
+class Orchestrator:
     """ Orchestrator to create a url+query and request it. """
 
-    xml, sleep_ = request_(service, _get_service_endpoint(service, *args))
-    return sleep_, ParseXML(xml)
+    def get_(self, *args: Union[str, Logger], wildcard: str , query: Optional[str] = None) -> Optional[Tuple['ParseXML', Union[float, int]]]:
+        service, logger = cast(str, args[0]), cast(Logger, args[1])
+        url = self._get_service_endpoint(service, wildcard, query)
+        if url:
+            response, sleep_ = self.request_(service, url, logger=logger)
+            return ParseXML(response), sleep_
+        return None
+
+    @staticmethod
+    def _get_service_endpoint(service: str, wildcard: str, query=None) -> Optional[str]:
+        if service == 'search':
+            return environ['OPS_SEARCH_ENDPOINT'].format(wildcard) + query
+        elif service == 'inpadoc':
+            return environ['OPS_PATENTFAMILY_ENDPOINT'].format(wildcard)
+        elif service == 'retrieval':
+            return environ['OPS_CHECKIMAGES_ENDPOINT'].format(wildcard)
+        return None
 
 
-# TODO: versão pública, uma maneira de identificar o endpoint sem conditions
-def _get_service_endpoint(service: str, wildcard: str, query=None) -> str:
-    if service == 'search':
-        return getenv('OPS_SEARCH_ENDPOINT').format(wildcard) + query
-    elif service == 'inpadoc':
-        return getenv('OPS_PATENTFAMILY_ENDPOINT').format(wildcard)
-    elif service == 'retrieval':
-        return getenv('OPS_CHECKIMAGES_ENDPOINT').format(wildcard)
+    def request_(self, *args: Union[str], logger: Logger, binary=False) -> Tuple[Union[str, bytes], float]:
+        service, url = args
+        logger.info(url)
+        r = get(url, headers={'Authorization': f'Bearer {Queries().get_access_token()}'})
+        throttling = r.headers.get('X-Throttling-Control')
+        if not throttling:
+            self._log_response(r, logger)
+            return self.request_(*args, logger=logger, binary=binary)
+        if not binary:
+            return r.text, self._set_sleep(service, throttling)
+        return r.content, self._set_sleep(service, throttling)
 
+    @staticmethod
+    def _log_response(response: models.Response, logger: Logger) -> None:
+        logger.error(response.url)
+        logger.error(response.text)
+        logger.error(response.headers)
+        logger.error(response.status_code)
+        sleep(360)
 
-def request_(service: str, url: str, binary=False) -> Tuple[Union[str, bytes], float]:
-    logger.info(url)
-    h = {'Authorization': f'Bearer {Queries().get_access_token()}'}
-    r = requests.get(url, headers=h)
-    throttling = r.headers.get('X-Throttling-Control')
-    if not throttling:
-        _print_response(r)
-        return request_(service, url, binary)
-    if not binary:
-        return r.text, _set_sleep(service, throttling)
-    return r.content, _set_sleep(service, throttling)
-
-
-# TODO: após testes, melhorar a função para lidar com os erros.
-def _print_response(response: requests.models.Response) -> None:
-    logger.error(response.text)
-    logger.error(response.headers)
-    logger.error(response.status_code)
-    sleep(180)
-
-
-def _set_sleep(service: str, throttling: str) -> float:
-    service = throttling[throttling.find(service):]
-    max_requests_per_minute = service[service.find(':') + 1:]
-    filter_ = int(sub(r'\D', " ", max_requests_per_minute).split()[0])
-    try:
-        return 60 / filter_ + 1
-    except ZeroDivisionError:
+    @staticmethod
+    def _set_sleep(service: str, throttling: str) -> Union[float, int]:
+        service = throttling[throttling.find(service):]
+        max_requests_per_minute = service[service.find(':') + 1:]
+        filter_ = int(sub(r'\D', " ", max_requests_per_minute).split()[0])
+        if filter_ != 0:
+            return 60 / filter_ + 1
         return 61

@@ -1,84 +1,72 @@
+from contextlib import suppress
 import xml.etree.ElementTree as ElT
+from googletrans import Translator
+from . import List, Optional, Tuple
 
 
 class ParseXML:
-    from typing import List, Optional, Union, Tuple
-
     def __init__(self, xml):
+        self.translator = Translator()
         self.xml = xml
 
     def extract_search_pages_quantity(self) -> Optional[int]:
         parser = ElT.fromstring(self.xml).find('.//{*}biblio-search')
-        total_pages = parser.attrib.get('total-result-count')
-        if parser and total_pages:
-            return int(total_pages)
+        if parser:
+            return int(parser.attrib['total-result-count'])
+        return None
 
-    def extract_patents(self) -> Optional[List[dict]]:
-        if patents := ElT.fromstring(self.xml).findall('.//{*}document-id'):
-            ps = []
-            for patent in patents:
-                p = {}
-                for fields in patent:
-                    key = fields.tag[fields.tag.find('}') + 1:]
-                    value = fields.text
-                    p.update({key: value})
-                ps.append(p)
-            return ps
+    def extract_patents(self) -> List[dict]:
+        patents_pubnum = []
+        for patent in ElT.fromstring(self.xml).findall('.//{*}document-id'):
+            pubnum = {f'{i.tag[i.tag.find("}") + 1:]}': f'{i.text}' for i in patent}
+            patents_pubnum.append(pubnum)
+        return patents_pubnum
 
-    def extract_abstract(self) -> Tuple[str, str, Union[List[str]]]:
-        parser = ElT.fromstring(self.xml)
-        try:
-            ab = parser.find('.//{*}abstract').find('./{*}p').text.replace("'", '')
-        except AttributeError:
-            ab = 'null'
-        return self._extract_titles(), ab, self._extract_applicants()
+    def extract_abstract(self) -> Tuple[str, str, str]:
+        ab = 'null'
+        with suppress(IndexError):
+            parser = ElT.fromstring(self.xml).findall('.//{*}abstract')[0]
+            abstract = parser.findall('./{*}p')[0].text
+            if abstract is not None:
+                ab = abstract.replace("'", '').replace('\u2002', ' ')
+                ab = self.translator.translate(ab).text
+        return self._extract_title(), ab, self._extract_applicant()
 
-    def _extract_titles(self) -> str:
-        if titles := ElT.fromstring(self.xml).findall('.//{*}invention-title'):
-            t = [
-                'Lang={} '.format(i.attrib.get('lang')) + i.text.replace("'", '')
-                for i in titles]
-            for title in t:
-                if 'Lang=en' in title:
-                    return title.split(' ', maxsplit=1).pop().replace("'", '')
-            return t.pop().split(' ', maxsplit=1).pop().replace("'", '')
-        print(self.xml)
-        return 'null'
+    def _extract_title(self) -> str:
+        t = 'null'
+        with suppress(IndexError):
+            i = ElT.fromstring(self.xml).findall('.//{*}invention-title')[0].text
+            if i is not None:
+                t = self.translator.translate(
+                    '{}'.format(i.replace("'", '').replace('\u2002', ' '))).text
+        return t
 
-    def _extract_applicants(self) -> Union[str, List[str]]:
-        if not ElT.fromstring(self.xml).findall('.//{*}applicant-name'):
-            return 'null'
-        applicants = ElT.fromstring(self.xml).findall('.//{*}applicant[@sequence="1"]')
-        a = [
-            i.find('.//{*}name').text.replace("'", '').lower()
-            for i in applicants]
-        for applicant in a:
-            if '[' not in applicant and len(a) > 1:
-                a.remove(applicant)
-        if len(a) < 2:
-            return a.pop()
+    def _extract_applicant(self) -> str:
+        a = 'null'
+        with suppress(IndexError):
+            ap_name = ElT.fromstring(self.xml).findall('.//{*}applicant-name')[0]
+            ap = ap_name.findall('./{*}name')[0].text
+            if ap:
+                ap = ap.replace("'", '').replace('\u2002', ' ').upper()
+                a = self.translator.translate(ap).text if not ap.isascii() else ap
         return a
 
-    def extract_patent_family(self) -> Union[bool, List[str]]:
-        if self._no_patent_family():
-            return False
-        pf = []
-        for i in ElT.fromstring(self.xml).findall('.//{*}family-member//{*}publication-reference'):
-            infos = [info.text for info in i.find('.//{*}document-id')]
-            pf.append(''.join(infos[:-1]))
-            # appends without date of publication
-        return pf
+    def extract_patent_family(self) -> Optional[List[str]]:
+        with suppress(IndexError):
+            pf = ElT.fromstring(self.xml).findall('.//{*}family-member//{*}publication-reference')
+            if len(pf) > 1:
+                pf_l = []
+                for i in pf:
+                    infos = [info.text for info in i.findall('./{*}document-id')[0] if info.text is not None]
+                    pf_l.append(''.join((infos[:-1])))
+                    # appends without date of publication
+                pf_l.sort()
+                return pf_l
+        return None
 
-    def _no_patent_family(self) -> bool:
-        if msg := ElT.fromstring(self.xml).find('.//{*}message'):
-            if msg.text == 'No results found':
-                return True
-            # TODO: e se não houver?
-        return False
-
-    def checks_for_imgs(self) -> Optional[Tuple[int, str]]:
-        parser = ElT.fromstring(self.xml)
-        if p := parser.find('.//{*}document-instance[@desc="Drawing"]'):
-            u = p.attrib.get('link')
-            return int(p.attrib.get('number-of-pages')), u
-        # TODO: e os outros tipos de imagens?
+    def checks_for_img(self) -> Optional[str]:
+        with suppress(IndexError):
+            parser = ElT.fromstring(self.xml)
+            p = parser.findall('.//{*}document-instance[@desc="Drawing"]')[0]
+            return p.attrib.get('link')
+        return None
