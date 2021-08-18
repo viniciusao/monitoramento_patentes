@@ -1,0 +1,20 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "monitor_patents_ops"
+author = "Vinícius Oliveira de Aguiar"
+author-email = "vinicius.aguiar@gavb.com.br"
+home-page = "https://github.com/viniciusao/monitoramento_patentes"
+requires = [
+    "python-dotenv==0.19.0",
+    "requests==2.26.0",
+    "types-requests==2.25.6",
+    "pdf2image==1.16.0",
+    "fpdf2==2.4.2",
+    "fuzzywuzzy==0.18.0",
+    "matplotlib==3.4.2",
+    "numpy==1.21.1"
+]
+requires-python = ">=3.6"
