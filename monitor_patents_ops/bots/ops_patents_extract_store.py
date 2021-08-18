@@ -1,6 +1,6 @@
-from bots import load_dotenv, datetime, environ, getLogger, sleep, Queries, Orchestrator, List, Optional, Tuple
-from utils.exports import to_csv
-from utils.ops_search_query_maker import create_query_over_2000, get_ipc_codes
+from monitor_patents_ops.bots import load_dotenv, datetime, environ, getLogger, sleep, Queries, Orchestrator, List, Optional, Tuple
+from monitor_patents_ops.utils.exports import to_csv
+from monitor_patents_ops.utils.ops_search_query_maker import create_query_over_2000, get_ipc_codes
 
 load_dotenv()
 

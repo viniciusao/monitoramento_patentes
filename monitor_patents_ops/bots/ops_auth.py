@@ -2,7 +2,7 @@ from base64 import b64encode
 from contextlib import suppress
 from json import JSONDecodeError
 from requests import exceptions, models, request
-from bots import load_dotenv, environ, Queries, Dict, Optional, Union, Tuple
+from monitor_patents_ops.bots import load_dotenv, environ, Queries, Dict, Optional, Union, Tuple
 
 
 load_dotenv()

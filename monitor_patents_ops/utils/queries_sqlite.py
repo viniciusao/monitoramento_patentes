@@ -1,5 +1,5 @@
 from sqlite3 import connect, OperationalError
-from utils import datetime, environ, Logger, List, Optional, Union, Tuple
+from monitor_patents_ops.utils import datetime, environ, Logger, List, Optional, Union, Tuple
 
 
 class Queries:

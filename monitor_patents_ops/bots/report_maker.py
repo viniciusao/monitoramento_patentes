@@ -1,6 +1,6 @@
 from fpdf import FPDF
 from pdf2image import convert_from_path
-from bots import load_dotenv, environ, Queries, Tuple, Optional
+from monitor_patents_ops.bots import load_dotenv, environ, Queries, Tuple, Optional
 
 
 class ReportMaker(FPDF):

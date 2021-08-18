@@ -1,4 +1,4 @@
-from . import environ, List
+from monitor_patents_ops.utils import environ, List
 
 
 def get_ipc_codes(*args: str):

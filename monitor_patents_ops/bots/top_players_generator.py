@@ -2,7 +2,7 @@ from itertools import zip_longest
 from fuzzywuzzy import fuzz, process
 from matplotlib import pyplot as plt
 import numpy as np
-from bots import load_dotenv, Queries, makedirs, cast, Tuple, List
+from monitor_patents_ops.bots import load_dotenv, Queries, makedirs, cast, Tuple, List
 
 
 load_dotenv()

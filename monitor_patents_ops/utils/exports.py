@@ -1,5 +1,5 @@
 from csv import writer
-from . import makedirs, List, Tuple
+from monitor_patents_ops.utils import makedirs, List, Tuple
 
 
 def to_csv(fname: str, write_mode: str, hdr_row: Tuple[Tuple[str]], body_rows: List[Tuple[str]]) -> None:

@@ -1,7 +1,7 @@
 from contextlib import suppress
 import xml.etree.ElementTree as ElT
 from googletrans import Translator
-from . import List, Optional, Tuple
+from monitor_patents_ops.utils import List, Optional, Tuple
 
 
 class ParseXML:

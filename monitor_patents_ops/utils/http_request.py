@@ -1,9 +1,9 @@
 from time import sleep
 from re import sub
 from requests import get, models
-from . import environ, Logger, cast, Optional, Union, Tuple
-from .queries_sqlite import Queries
-from .xml_parser import ParseXML
+from monitor_patents_ops.utils import environ, Logger, cast, Optional, Union, Tuple
+from monitor_patents_ops.utils.queries_sqlite import Queries
+from monitor_patents_ops.utils.xml_parser import ParseXML
 
 
 class Orchestrator:

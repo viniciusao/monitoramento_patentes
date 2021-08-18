@@ -4,8 +4,8 @@ from os import getenv, environ, makedirs
 from time import sleep
 from typing import cast, Dict, List, Optional, Union, Tuple
 from dotenv import load_dotenv
-from utils.http_request import Orchestrator
-from utils.queries_sqlite import Queries
+from monitor_patents_ops.utils.http_request import Orchestrator
+from monitor_patents_ops.utils.queries_sqlite import Queries
 
 # noinspection PyArgumentList
 basicConfig(

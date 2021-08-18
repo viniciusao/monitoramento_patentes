@@ -1,4 +1,4 @@
-from bots import load_dotenv, getLogger, environ, Queries, Orchestrator, sleep, makedirs, List, Union
+from monitor_patents_ops.bots import load_dotenv, getLogger, environ, Queries, Orchestrator, sleep, makedirs, List, Union
 
 load_dotenv()
 
