@@ -1,11 +1,8 @@
 from base64 import b64encode
+from contextlib import suppress
 from json import JSONDecodeError
-from os import getenv
-from typing import Optional, Union, Tuple
-from dotenv import load_dotenv
-import requests
-from requests.exceptions import ConnectionError, Timeout
-from utils.queries_sqlite import Queries
+from requests import exceptions, models, request
+from bots import load_dotenv, environ, Queries, Dict, Optional, Union, Tuple
 
 
 load_dotenv()
@@ -29,28 +26,28 @@ class OPSLogin:
     def _req(self):
         u, h = self._set_params()
         try:
-            r = requests.request(
+            r = request(
                 "POST", u, headers=h,
                 data='grant_type=client_credentials', timeout=15)
-        except (ConnectionError, Timeout) as e:
+        except (exceptions.ConnectionError, exceptions.Timeout) as e:
             self._errors(e)
         else:
             return self._token(r)
 
     @staticmethod
-    def _set_params() -> Tuple[str, dict]:
+    def _set_params() -> Tuple[Optional[str], Dict[str, str]]:
         credential = bytes(
-            ':'.join((getenv("OPS_AUTH_CONSUMER_KEY"), getenv(
-                "OPS_AUTH_SECRET_KEY"))), encoding='utf-8')
+            ':'.join((environ["OPS_AUTH_CONSUMER_KEY"], environ[
+                "OPS_AUTH_SECRET_KEY"])), encoding='utf-8')
         h = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': f'Basic {b64encode(credential).decode()}'}
-        return getenv('OPS_AUTH_ENDPOINT'), h
+        return environ['OPS_AUTH_ENDPOINT'], h
 
-    def _errors(self, e: Union[ConnectionError, Timeout]) -> None:
-        if isinstance(e, ConnectionError):
+    def _errors(self, e: Union[exceptions.ConnectionError, exceptions.Timeout]) -> None:
+        if isinstance(e, exceptions.ConnectionError):
             self._store('Failed to connect.')
-        elif isinstance(e, Timeout):
+        elif isinstance(e, exceptions.Timeout):
             self._store('Connection Timedout.')
         else:
             self._store('Unknown error.')
@@ -61,12 +58,11 @@ class OPSLogin:
         else:
             self.cursor.insert_access_token(status, access_token)
 
-    def _token(self, response: requests.models.Response) -> Optional[str]:
-        try:
+    def _token(self, response: models.Response) -> Optional[str]:
+        with suppress(JSONDecodeError):
             return response.json().get('access_token')
-        except JSONDecodeError:
-            self._store('Weird response, check the OPS Auth endpoint.')
-
+        self._store('Weird response, check the OPS Auth endpoint.')
+        return None
 
 if __name__ == '__main__':
     OPSLogin().auth()

@@ -1,9 +1,6 @@
 # tests
 tests/
 
-# empty folders
-!.keepdir
-
 # pycharm
 .idea/
 
