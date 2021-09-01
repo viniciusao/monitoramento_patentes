@@ -7,8 +7,6 @@ Melhorias:
 - [ ] Implementar uma heurística 	no método `create_query_over_2000` no módulo `utils.ops_search_query_maker.py`
 <br>
 
-
-
 # Usage and settings
 1 - `git clone this_repo` ; `cd this_repo` ; `pip install flit`; flit install
 <br>
@@ -44,3 +42,17 @@ DESCRIPTIONS="('Título', 'Número de públicação', 'Keywords', 'Abstract', 'D
 CSV_HEADERS="[('País', 'Número de Públicação', 'Título', 'Keywords', 'Abstract', 'Detentor da patente', 'Família de patentes', 'Imagem')]"
 EXP_PATH='../files/exports/monitoramento_patentes_'
 ```
+<br>
+<br>
+3 - Schema já criado no `new_ops.db`
+<br>
+
+# Fluxogramas
+
+![alt Fluxograma Geral](monitor_patents_ops/files/general_chartflow.jpg)
+<br>
+![alt Fluxograma Geral](monitor_patents_ops/files/sqlite_schema.jpg)
+<br>
+![alt Search Patents](monitor_patents_ops/files/search_forpatents_chartflow.jpg)
+<br>
+![alt Get Patents Infos](monitor_patents_ops/files/get_patentsinfos_chartflow.jpg)
