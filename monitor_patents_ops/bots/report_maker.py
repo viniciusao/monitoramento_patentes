@@ -35,7 +35,7 @@ class ReportMaker(FPDF):
     def _patents_infos(self, args: Optional[Tuple[str, ...]]) -> None:
         if args:
             country, pubnum, title, keywords, abstract, applicants, patent_family, image_path = args
-            descriptions = eval(environ['DESCRIÇÕES'])
+            descriptions = eval(environ['DESCRIPTIONS'])
             self._img_pdf2jpg(image_path, country+pubnum)
             patent_info = (title, pubnum, keywords, abstract, applicants, patent_family)
             self._add_patent_info_page(self.epw / 4, descriptions, image_path, self.font_size * 2.5, patent_info)
