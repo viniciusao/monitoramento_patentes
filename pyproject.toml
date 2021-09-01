@@ -15,6 +15,7 @@ requires = [
     "fpdf2==2.4.2",
     "fuzzywuzzy==0.18.0",
     "matplotlib==3.4.2",
-    "numpy==1.21.1"
+    "numpy==1.21.1",
+    "googletrans==3.0.0"
 ]
 requires-python = ">=3.6"
