@@ -8,10 +8,13 @@ Melhorias:
 <br>
 
 # Usage and settings
-1 - `git clone this_repo` ; `cd this_repo` ; `pip install flit`; flit install
+1 - `git clone this_repo` ; `cd this_repo` ; `pip install flit`; `flit install`
 <br>
 <br>
-2 - Criar um `.env` no diretório `monitor_patents_ops`
+2 - Schema já criado no `new_ops.db`
+<br>
+<br>
+3 - Criar um `.env` no diretório `monitor_patents_ops`
 
 ```
 # SQLITE3 OPS INFOS
@@ -42,9 +45,6 @@ DESCRIPTIONS="('Título', 'Número de públicação', 'Keywords', 'Abstract', 'D
 CSV_HEADERS="[('País', 'Número de Públicação', 'Título', 'Keywords', 'Abstract', 'Detentor da patente', 'Família de patentes', 'Imagem')]"
 EXP_PATH='../files/exports/monitoramento_patentes_'
 ```
-<br>
-<br>
-3 - Schema já criado no `new_ops.db`
 <br>
 
 # Fluxogramas
