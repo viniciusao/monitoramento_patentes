@@ -21,8 +21,8 @@ Melhorias:
 OPS_DB_PATH='monitor_patents_ops/new_ops.db'
 
 # OPS Auth
-OPS_AUTH_CONSUMER_KEY='50RVxeb2Kun4LLwg1p5BBssRZNlDTAQg'
-OPS_AUTH_SECRET_KEY='xPYiQORkNMuV308W'
+OPS_AUTH_CONSUMER_KEY=<yourkey>
+OPS_AUTH_SECRET_KEY=<yourkey>
 OPS_AUTH_ENDPOINT='https://ops.epo.org/3.2/auth/accesstoken'
 
 # OPS CODES
