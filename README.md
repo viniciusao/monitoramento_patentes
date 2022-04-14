@@ -1,8 +1,5 @@
 # monitoramento_patentes
 
-TODO:
-- [ ] Deploy
-
 Melhorias:
 - [ ] Implementar uma heurística 	no método `create_query_over_2000` no módulo `utils.ops_search_query_maker.py`
 <br>
