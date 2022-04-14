@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [tool.flit.metadata]
 module = "monitor_patents_ops"
 author = "Vinícius Oliveira de Aguiar"
-author-email = "vinicius.aguiar@gavb.com.br"
+author-email = "viniciusoa@protonmail.com"
 home-page = "https://github.com/viniciusao/monitoramento_patentes"
 requires = [
     "python-dotenv==0.19.0",
